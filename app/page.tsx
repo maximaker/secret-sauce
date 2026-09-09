@@ -6,14 +6,23 @@ import { Progress } from "@/components/Progress";
 import { QuestionScreen } from "@/components/QuestionScreen";
 import { Reveal } from "@/components/Reveal";
 import { StagePicker } from "@/components/StagePicker";
-import { ACTS, QUESTIONS, type ActId } from "@/lib/questions";
-import { buildResult, emptyAnswers, isComplete, type Answers } from "@/lib/scoring";
+import {
+  ACTS,
+  CORE_ACTS,
+  CORE_QUESTIONS,
+  DEEP_ACTS,
+  DEEP_QUESTIONS,
+  type ActId,
+  type Question,
+} from "@/lib/questions";
+import { buildResult, emptyAnswers, hasDeep, isComplete, type Answers } from "@/lib/scoring";
 import { decodeAnswers, encodeAnswers } from "@/lib/share";
 import { STAGES, type StageKey } from "@/lib/stages";
 
 type Phase = "landing" | "stage" | "question" | "reveal";
+type Round = "core" | "deep";
 
-const STORE_KEY = "secret-sauce/v1";
+const STORE_KEY = "secret-sauce/v2";
 const HUE_LANDING = 258;
 const HUE_REVEAL = 78;
 const ADVANCE_MS = 340;
@@ -21,7 +30,7 @@ const ADVANCE_MS = 340;
 /** The first question of each act carries that act's framing line. */
 const FIRST_OF_ACT = new Set(
   Object.values(
-    QUESTIONS.reduce<Record<string, string>>((acc, q) => {
+    [...CORE_QUESTIONS, ...DEEP_QUESTIONS].reduce<Record<string, string>>((acc, q) => {
       if (!(q.act in acc)) acc[q.act] = q.id;
       return acc;
     }, {}),
@@ -30,13 +39,18 @@ const FIRST_OF_ACT = new Set(
 
 export default function Page() {
   const [phase, setPhase] = useState<Phase>("landing");
+  const [round, setRound] = useState<Round>("core");
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Answers>(emptyAnswers);
   const [hydrated, setHydrated] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
   const advanceTimer = useRef<number | null>(null);
+  /** The question visible right now, read by the auto-advance timer. */
+  const currentQid = useRef<string | undefined>(undefined);
 
-  const question = QUESTIONS[index];
+  const deck: Question[] = round === "core" ? CORE_QUESTIONS : DEEP_QUESTIONS;
+  const question = deck[index];
+  currentQid.current = question?.id;
   const selected = useMemo(
     () => (question ? (answers.choices[question.id] ?? []) : []),
     [answers.choices, question],
@@ -58,10 +72,13 @@ export default function Page() {
     try {
       const stored = window.localStorage.getItem(STORE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored) as { answers: Answers; index: number };
+        const parsed = JSON.parse(stored) as { answers: Answers; index: number; round?: Round };
         if (parsed?.answers?.stage) {
+          const restoredRound: Round = parsed.round === "deep" ? "deep" : "core";
+          const size = (restoredRound === "core" ? CORE_QUESTIONS : DEEP_QUESTIONS).length;
           setAnswers({ ...emptyAnswers(), ...parsed.answers });
-          setIndex(Math.min(Math.max(parsed.index ?? 0, 0), QUESTIONS.length - 1));
+          setRound(restoredRound);
+          setIndex(Math.min(Math.max(parsed.index ?? 0, 0), size - 1));
           setHasSaved(true);
         }
       }
@@ -75,19 +92,18 @@ export default function Page() {
   useEffect(() => {
     if (!hydrated || phase === "landing") return;
     try {
-      window.localStorage.setItem(STORE_KEY, JSON.stringify({ answers, index }));
+      window.localStorage.setItem(STORE_KEY, JSON.stringify({ answers, index, round }));
     } catch {
       /* private mode / quota — the journey still works, it just won't resume */
     }
-  }, [answers, index, phase, hydrated]);
+  }, [answers, index, round, phase, hydrated]);
 
   /* ── The world's colour follows the act ──────────────────────────────── */
   const activeAct: ActId | null =
     phase === "question" && question ? question.act : phase === "stage" ? "calibrate" : null;
 
   useEffect(() => {
-    const hue =
-      phase === "reveal" ? HUE_REVEAL : activeAct ? ACTS[activeAct].hue : HUE_LANDING;
+    const hue = phase === "reveal" ? HUE_REVEAL : activeAct ? ACTS[activeAct].hue : HUE_LANDING;
     document.documentElement.style.setProperty("--hue", String(hue));
   }, [activeAct, phase]);
 
@@ -102,40 +118,68 @@ export default function Page() {
 
   useEffect(() => clearTimer, []);
 
+  /**
+   * Arm the auto-advance, tagged with the question it belongs to. A timer that
+   * outlives its own screen — a fast double tap, a re-render landing between
+   * arm and fire — must not push the deck forward a second time and skip the
+   * next question entirely.
+   */
+  const armAdvance = useCallback(
+    (forQuestionId: string) => {
+      clearTimer();
+      advanceTimer.current = window.setTimeout(() => {
+        if (currentQid.current !== forQuestionId) return;
+        goNextRef.current();
+      }, ADVANCE_MS);
+    },
+    [],
+  );
+
+  const goNextRef = useRef<() => void>(() => {});
+
   const goNext = useCallback(() => {
     clearTimer();
     setIndex((current) => {
-      if (current >= QUESTIONS.length - 1) {
+      if (current >= deck.length - 1) {
         setPhase("reveal");
         return current;
       }
       return current + 1;
     });
-  }, []);
+  }, [deck.length]);
+
+  goNextRef.current = goNext;
 
   const goBack = useCallback(() => {
     clearTimer();
     if (phase === "reveal") {
       setPhase("question");
-      setIndex(QUESTIONS.length - 1);
+      setIndex(deck.length - 1);
       return;
     }
     if (phase === "question") {
-      if (index === 0) setPhase("stage");
-      else setIndex((n) => n - 1);
+      if (index > 0) setIndex((n) => n - 1);
+      else if (round === "deep") setPhase("reveal");
+      else setPhase("stage");
       return;
     }
     if (phase === "stage") setPhase("landing");
-  }, [index, phase]);
+  }, [deck.length, index, phase, round]);
 
-  const pickStage = useCallback((stage: StageKey) => {
-    setAnswers((prev) => ({ ...prev, stage }));
-    clearTimer();
-    advanceTimer.current = window.setTimeout(() => {
-      setPhase("question");
-      setIndex(0);
-    }, ADVANCE_MS);
+  const beginCore = useCallback(() => {
+    setRound("core");
+    setPhase("question");
+    setIndex(0);
   }, []);
+
+  const pickStage = useCallback(
+    (stage: StageKey) => {
+      setAnswers((prev) => ({ ...prev, stage }));
+      clearTimer();
+      advanceTimer.current = window.setTimeout(beginCore, ADVANCE_MS);
+    },
+    [beginCore],
+  );
 
   const toggle = useCallback(
     (optionId: string) => {
@@ -159,11 +203,17 @@ export default function Page() {
         ...prev,
         choices: { ...prev.choices, [question.id]: [optionId] },
       }));
-      clearTimer();
-      advanceTimer.current = window.setTimeout(goNext, ADVANCE_MS);
+      armAdvance(question.id);
     },
-    [goNext, question],
+    [armAdvance, question],
   );
+
+  const startDeep = useCallback(() => {
+    clearTimer();
+    setRound("deep");
+    setIndex(0);
+    setPhase("question");
+  }, []);
 
   const canContinue = (() => {
     if (phase === "stage") return Boolean(answers.stage);
@@ -182,13 +232,13 @@ export default function Page() {
       if (event.key === "Enter") {
         if (phase === "landing") {
           event.preventDefault();
-          setPhase(answers.stage ? "question" : "stage");
+          if (answers.stage) beginCore();
+          else setPhase("stage");
           return;
         }
         if (phase === "stage" && answers.stage) {
           event.preventDefault();
-          setPhase("question");
-          setIndex(0);
+          beginCore();
           return;
         }
         if (phase === "question" && canContinue) {
@@ -224,28 +274,25 @@ export default function Page() {
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [answers.stage, canContinue, goBack, goNext, phase, pickStage, question, toggle]);
+  }, [answers.stage, beginCore, canContinue, goBack, goNext, phase, pickStage, question, toggle]);
 
-  /* Bring each new screen into view on small screens. */
   useEffect(() => {
     if (phase === "question" || phase === "reveal") window.scrollTo({ top: 0 });
-  }, [index, phase]);
+  }, [index, phase, round]);
 
   const answeredByAct = useMemo(() => {
-    const counts: Record<ActId, number> = {
-      calibrate: answers.stage ? 1 : 0,
-      energy: 0,
-      ease: 0,
-      evidence: 0,
-      edge: 0,
-    };
-    for (const q of QUESTIONS) {
+    const counts = {} as Record<ActId, number>;
+    for (const id of Object.keys(ACTS) as ActId[]) counts[id] = 0;
+    counts.calibrate = answers.stage ? 1 : 0;
+    deck.forEach((q, i) => {
       const done =
-        q.kind === "text" ? answers.line.trim().length > 0 || index > QUESTIONS.indexOf(q) : (answers.choices[q.id]?.length ?? 0) > 0;
+        q.kind === "text"
+          ? answers.line.trim().length > 0 || index > i
+          : (answers.choices[q.id]?.length ?? 0) > 0;
       if (done) counts[q.act] += 1;
-    }
+    });
     return counts;
-  }, [answers, index]);
+  }, [answers, deck, index]);
 
   const result = useMemo(
     () => (phase === "reveal" && isComplete(answers) ? buildResult(answers) : null),
@@ -257,7 +304,6 @@ export default function Page() {
     return `${window.location.origin}${window.location.pathname}#r=${encodeAnswers(answers)}`;
   }, [answers, result]);
 
-  /* Reflect the finished result in the address bar so a refresh keeps it. */
   useEffect(() => {
     if (phase === "reveal" && result) {
       window.history.replaceState(null, "", `#r=${encodeAnswers(answers)}`);
@@ -273,6 +319,7 @@ export default function Page() {
     }
     window.history.replaceState(null, "", window.location.pathname);
     setAnswers(emptyAnswers());
+    setRound("core");
     setIndex(0);
     setHasSaved(false);
     setPhase("landing");
@@ -281,6 +328,7 @@ export default function Page() {
   if (!hydrated) return <main className="shell" aria-busy="true" />;
 
   const inJourney = phase === "stage" || phase === "question";
+  const lastOfDeck = index === deck.length - 1;
 
   return (
     <main className="shell">
@@ -290,17 +338,23 @@ export default function Page() {
           Secret Sauce
         </span>
         {answers.stage && phase !== "landing" ? (
-          <span className="stage-tag">{STAGES[answers.stage].currency}</span>
+          <span className="stage-tag">
+            {round === "deep" && phase === "question"
+              ? "Going deeper"
+              : STAGES[answers.stage].currency}
+          </span>
         ) : null}
       </div>
 
-      {inJourney ? <Progress answeredByAct={answeredByAct} /> : null}
+      {inJourney ? (
+        <Progress acts={round === "core" ? CORE_ACTS : DEEP_ACTS} answeredByAct={answeredByAct} />
+      ) : null}
 
       <div className="main">
         {phase === "landing" ? (
           <Landing
             hasSaved={hasSaved}
-            onBegin={() => setPhase(answers.stage ? "question" : "stage")}
+            onBegin={() => (answers.stage ? beginCore() : setPhase("stage"))}
           />
         ) : null}
 
@@ -318,14 +372,20 @@ export default function Page() {
         ) : null}
 
         {phase === "reveal" && result ? (
-          <Reveal result={result} shareUrl={shareUrl} onRestart={restart} />
+          <Reveal
+            result={result}
+            shareUrl={shareUrl}
+            onRestart={restart}
+            onDeepen={hasDeep(answers) ? null : startDeep}
+            deepCount={DEEP_QUESTIONS.length}
+          />
         ) : null}
 
         {phase === "reveal" && !result ? (
           <div className="canvas enter">
             <h2 className="display question-title">That link didn&rsquo;t hold up.</h2>
             <p className="hint">
-              The result in the address bar is incomplete or from an older version. Four
+              The result in the address bar is incomplete or from an older version. Five
               minutes and you&rsquo;ll have your own.
             </p>
             <div className="hero-actions" style={{ marginTop: "2rem" }}>
@@ -343,7 +403,7 @@ export default function Page() {
             </button>
 
             {phase === "question" && question ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div className="footbar-actions">
                 <span className="keyhint">
                   {question.kind === "text" ? (
                     <>
@@ -355,15 +415,13 @@ export default function Page() {
                     </>
                   )}
                 </span>
-                <button
-                  className="btn btn--accent"
-                  disabled={!canContinue}
-                  onClick={goNext}
-                >
+                <button className="btn btn--accent" disabled={!canContinue} onClick={goNext}>
                   {question.kind === "text" && !answers.line.trim()
                     ? "Skip this one"
-                    : index === QUESTIONS.length - 1
-                      ? "See your sauce"
+                    : lastOfDeck
+                      ? round === "deep"
+                        ? "See the full picture"
+                        : "See your sauce"
                       : "Continue"}
                 </button>
               </div>

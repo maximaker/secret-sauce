@@ -4,7 +4,7 @@ export function Landing({ onBegin, hasSaved }: { onBegin: () => void; hasSaved: 
   return (
     <div className="canvas hero enter">
       <span className="eyebrow">
-        Eleven questions · No signup
+        Sixteen questions · No signup
       </span>
 
       <h1 className="display hero-title">
@@ -16,7 +16,7 @@ export function Landing({ onBegin, hasSaved }: { onBegin: () => void; hasSaved: 
       <p className="lede">
         It isn&rsquo;t a skill on a list. It&rsquo;s the thing so easy for you that you assume
         it&rsquo;s easy for everyone — which is exactly why you can&rsquo;t see it, and exactly
-        why it&rsquo;s worth something. Four minutes, whether you&rsquo;re fifteen or
+        why it&rsquo;s worth something. Five minutes, whether you&rsquo;re fifteen or
         fifty-five, and you leave with a sentence you can say out loud.
       </p>
 
@@ -32,12 +32,12 @@ export function Landing({ onBegin, hasSaved }: { onBegin: () => void; hasSaved: 
 
       <div className="facts">
         <div className="fact">
-          <span className="fact-value">~4 min</span>
+          <span className="fact-value">~5 min</span>
           <span className="fact-label">Start to finish</span>
         </div>
         <div className="fact">
-          <span className="fact-value">12 taps</span>
-          <span className="fact-label">One optional sentence</span>
+          <span className="fact-value">17 taps</span>
+          <span className="fact-label">Plus a deeper round if you want it</span>
         </div>
         <div className="fact">
           <span className="fact-value">Nothing sent</span>

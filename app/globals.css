@@ -238,11 +238,14 @@ button {
 
 .progress-fill {
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: 0;
   background: var(--accent);
   border-radius: 2px;
   transform-origin: left;
-  transition: width 620ms var(--ease), background 1200ms var(--ease);
+  /* scaleX rather than width: the fill is animated on every answer, and a
+     transform stays off the layout path. */
+  transform: scaleX(var(--fill, 0));
+  transition: transform 620ms var(--ease), background 1200ms var(--ease);
   box-shadow: 0 0 10px var(--accent-edge);
 }
 

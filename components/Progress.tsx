@@ -17,10 +17,13 @@ export function Progress({ answeredByAct }: { answeredByAct: Record<ActId, numbe
   return (
     <div className="progress" role="progressbar" aria-label="Journey progress" aria-valuemin={0} aria-valuemax={QUESTIONS.length} aria-valuenow={SCORED_ACTS.reduce((n, a) => n + answeredByAct[a], 0)}>
       {SCORED_ACTS.map((act) => {
-        const pct = Math.min(100, (answeredByAct[act] / COUNTS[act]) * 100);
+        const fill = Math.min(1, answeredByAct[act] / COUNTS[act]);
         return (
           <div key={act} className="progress-seg" title={ACTS[act].title}>
-            <div className="progress-fill" style={{ width: `${pct}%` }} />
+            <div
+              className="progress-fill"
+              style={{ "--fill": fill } as React.CSSProperties}
+            />
           </div>
         );
       })}

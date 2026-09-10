@@ -222,13 +222,33 @@ export function Reveal({
         </ol>
       </section>
 
+      {/* Insight that stays on this page is worth nothing by Monday. These
+          are written to survive a copy-paste with no editing. */}
       <section className="section">
-        <h2 className="section-label">Say it out loud</h2>
-        <p className="pitch">&ldquo;{archetype.pitch}&rdquo;</p>
-        <div>
-          <button className="btn btn--accent" onClick={() => copy("pitch", archetype.pitch)}>
-            {copied === "pitch" ? "Copied" : "Copy the line"}
-          </button>
+        <h2 className="section-label">Say it where it counts</h2>
+        <p className="prose">
+          Same finding, four places it&rsquo;s actually used. Take them as written or
+          bend them — the point is that you leave with words, not a diagnosis.
+        </p>
+        <div className="artifacts">
+          {result.artifacts.map((a) => (
+            <article className="artifact" key={a.id}>
+              <header className="artifact-head">
+                <div>
+                  <h3 className="artifact-label">{a.label}</h3>
+                  <p className="artifact-note">{a.note}</p>
+                </div>
+                <button
+                  className="btn btn--quiet artifact-copy"
+                  onClick={() => copy(a.id, a.text)}
+                  aria-label={`Copy: ${a.label}`}
+                >
+                  {copied === a.id ? "Copied" : "Copy"}
+                </button>
+              </header>
+              <p className="artifact-text">{a.text}</p>
+            </article>
+          ))}
         </div>
       </section>
 

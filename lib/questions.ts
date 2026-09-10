@@ -170,6 +170,8 @@ export type ConditionAxis = {
   right: string;
   /** Indexed by position: -2, -1, +1, +2 → the sentence shown on the reveal. */
   reading: Record<string, string>;
+  /** The same position as a short noun phrase, for the "ask for" artifact. */
+  ask: Record<string, string>;
 };
 
 export const CONDITION_AXES: ConditionAxis[] = [
@@ -185,6 +187,7 @@ export const CONDITION_AXES: ConditionAxis[] = [
       "1": "A small team is your setting — big enough to spark, small enough to hear.",
       "2": "You're at your best with an audience. Don't let anyone put you in a back office.",
     },
+    ask: {"-2": "real solo focus time", "-1": "one good thinking partner", "1": "a small team", "2": "a room to work"},
   },
   {
     id: "structure",
@@ -198,6 +201,7 @@ export const CONDITION_AXES: ConditionAxis[] = [
       "1": "Rough direction suits you. Over-specified work will bore you into mediocrity.",
       "2": "A blank page is where you're strongest — and where most people freeze.",
     },
+    ask: {"-2": "a clear spec", "-1": "a fixed goal and my own method", "1": "a rough direction", "2": "an open brief"},
   },
   {
     id: "tempo",
@@ -211,6 +215,7 @@ export const CONDITION_AXES: ConditionAxis[] = [
       "1": "Urgency sharpens you. In slow conditions you'll need to manufacture some.",
       "2": "You come alive when it's genuinely on fire. Steady states will bore you flat.",
     },
+    ask: {"-2": "calm conditions", "-1": "humane deadlines", "1": "real urgency", "2": "genuinely high stakes"},
   },
   {
     id: "horizon",
@@ -224,6 +229,7 @@ export const CONDITION_AXES: ConditionAxis[] = [
       "1": "You can hold a season-long arc without losing the thread. Most people can't.",
       "2": "You think in years. Short-cycle work will feel like nothing you do matters.",
     },
+    ask: {"-2": "short cycles", "-1": "week-long units of work", "1": "season-long projects", "2": "multi-year arcs"},
   },
 ];
 
@@ -469,7 +475,7 @@ export const QUESTIONS: Question[] = [
         id: "v1d",
         label: "An introduction",
         vector: { people: 2, signal: 1 },
-        phrase: "the door you happen to know how to open",
+        phrase: "the introduction that opens a door",
       },
       {
         id: "v1e",

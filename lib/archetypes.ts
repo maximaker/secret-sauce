@@ -30,6 +30,8 @@ export type Archetype = {
   pitch: string;
   /** Two-word feel used in the share card. */
   glyph: string;
+  /** A short first-person line, ready to paste into a profile or bio. */
+  headline: string;
 };
 
 const v = (parts: Partial<FullVector>): FullVector => ({
@@ -47,6 +49,7 @@ const v = (parts: Partial<FullVector>): FullVector => ({
 export const ARCHETYPES: Archetype[] = [
   {
     id: "cartographer",
+    headline: "I make messy problems legible.",
     name: "The Cartographer",
     tagline: "You map the territory nobody else can see.",
     primary: "pattern",
@@ -68,6 +71,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "translator",
+    headline: "I make complicated things obvious.",
     name: "The Translator",
     tagline: "You turn the complicated into the obvious.",
     primary: "signal",
@@ -89,6 +93,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "builder",
+    headline: "I turn ideas into things that exist.",
     name: "The Builder",
     tagline: "You turn “someone should” into “it exists”.",
     primary: "craft",
@@ -109,6 +114,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "catalyst",
+    headline: "I get stalled things moving.",
     name: "The Catalyst",
     tagline: "You make things happen through other people.",
     primary: "drive",
@@ -129,6 +135,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "anchor",
+    headline: "I'm the reason it keeps working.",
     name: "The Anchor",
     tagline: "You're the reason it doesn't fall apart.",
     primary: "care",
@@ -149,6 +156,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "inventor",
+    headline: "I find the option that wasn't on the list.",
     name: "The Inventor",
     tagline: "You find the third option nobody considered.",
     primary: "play",
@@ -169,6 +177,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "connector",
+    headline: "I know who — and how to ask.",
     name: "The Connector",
     tagline: "You know who — and you know how to ask.",
     primary: "people",
@@ -189,6 +198,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "diagnostician",
+    headline: "I find the real problem, not the loud one.",
     name: "The Diagnostician",
     tagline: "You find what's actually wrong, not what's loudest.",
     primary: "insight",
@@ -209,6 +219,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "provocateur",
+    headline: "I ask the question that changes the plan.",
     name: "The Provocateur",
     tagline: "You ask the question that reroutes the room.",
     primary: "play",
@@ -229,6 +240,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "steward",
+    headline: "I build the conditions for good work.",
     name: "The Steward",
     tagline: "You make it safe to do good work.",
     primary: "care",
@@ -249,6 +261,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "architect",
+    headline: "I design things that survive scale.",
     name: "The Architect",
     tagline: "You design the thing that survives scale.",
     primary: "pattern",
@@ -269,6 +282,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "closer",
+    headline: "I take nearly-done to done.",
     name: "The Closer",
     tagline: "You get it over the line.",
     primary: "drive",

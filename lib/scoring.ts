@@ -107,6 +107,14 @@ export type Alignment = {
   body: string;
 };
 
+/** A block of text written to be copied straight out and used somewhere. */
+export type Artifact = {
+  id: string;
+  label: string;
+  note: string;
+  text: string;
+};
+
 export type Result = {
   archetype: Archetype;
   runnerUp: Archetype;
@@ -123,6 +131,7 @@ export type Result = {
   conditions: ConditionReading[] | null;
   drains: string[] | null;
   misuse: string | null;
+  artifacts: Artifact[];
 };
 
 function rankArchetypes(user: FullVector): { archetype: Archetype; score: number }[] {
@@ -289,6 +298,87 @@ function buildConditions(answers: Answers): ConditionReading[] | null {
   return readings.length ? readings : null;
 }
 
+/**
+ * The result's job doesn't end at insight — it ends when the insight is
+ * somewhere useful. These are written to survive a copy-paste with no editing.
+ *
+ * Ease phrases are third person ("spots the flaw"), Evidence phrases are noun
+ * phrases, and Edge phrases are base-form verbs. Each frame below is built so
+ * its ingredient reads grammatically in first person without any conjugating.
+ */
+function buildArtifacts(
+  answers: Answers,
+  archetype: Archetype,
+  stage: StageKey,
+  conditions: ConditionReading[] | null,
+  drains: string[] | null,
+): Artifact[] {
+  const frames = STAGES[stage].artifacts;
+  const ease = phrasesFor(answers, "a1")[0] ?? phrasesFor(answers, "a3")[0];
+  const edge = phrasesFor(answers, "g1")[0];
+  const evidence = phrasesFor(answers, "v1")[0];
+  const line = tidyLine(answers.line);
+  const demand = line ? `when ${line}` : evidence ? `for ${evidence}` : null;
+
+  const out: Artifact[] = [
+    {
+      id: "headline",
+      label: frames.headline,
+      note: "One line. Use it where you only get one.",
+      text: archetype.headline,
+    },
+    {
+      id: "spoken",
+      label: frames.spoken,
+      note: "About fifteen seconds out loud. Say it, don't read it.",
+      text: [
+        archetype.pitch,
+        edge && demand
+          ? `I ${edge}, and people come to me ${demand}.`
+          : edge
+            ? `I ${edge}.`
+            : demand
+              ? `People come to me ${demand}.`
+              : null,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    },
+    {
+      id: "written",
+      label: frames.written,
+      note: "Two sentences you can build a paragraph on.",
+      text: [
+        ease ? `I'm the person who ${ease}.` : archetype.pitch,
+        demand ? `People come to me ${demand}.` : null,
+        frames.close,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    },
+  ];
+
+  if (conditions && conditions.length) {
+    const asks = conditions
+      .map((c) => CONDITION_AXES.find((a) => a.id === c.id)?.ask[String(c.position)])
+      .filter(Boolean) as string[];
+    if (asks.length) {
+      const list =
+        asks.length > 1 ? `${asks.slice(0, -1).join(", ")} and ${asks[asks.length - 1]}` : asks[0];
+      out.push({
+        id: "conditions",
+        label: "What to ask for",
+        note: "For a new role, a project brief, or a conversation with your manager.",
+        text:
+          `I do my best work with ${list}.` +
+          (drains && drains.length ? ` What wastes me is ${drains[0]}.` : ""),
+      });
+    }
+  }
+
+  return out;
+}
+
 export function buildResult(answers: Answers): Result {
   const stage = answers.stage ?? "early";
   const depth: "core" | "deep" = hasDeep(answers) ? "deep" : "core";
@@ -321,6 +411,9 @@ export function buildResult(answers: Answers): Result {
   const drainPhrases = phrasesFor(answers, "d1");
   const misuse = phrasesFor(answers, "d2")[0] ?? null;
 
+  const conditions = buildConditions(answers);
+  const drains = drainPhrases.length ? drainPhrases : null;
+
   return {
     archetype: best.archetype,
     runnerUp: second.archetype,
@@ -333,9 +426,10 @@ export function buildResult(answers: Answers): Result {
     confidence: buildConfidence(separation, depth, alignment.agreement),
     alignment,
     depth,
-    conditions: buildConditions(answers),
-    drains: drainPhrases.length ? drainPhrases : null,
+    conditions,
+    drains,
     misuse,
+    artifacts: buildArtifacts(answers, best.archetype, stage, conditions, drains),
   };
 }
 

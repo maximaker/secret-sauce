@@ -20,6 +20,17 @@ export type Stage = {
   valueFrame: string;
   /** Two stage-specific moves, joined with two archetype-specific ones. */
   moves: string[];
+  /**
+   * Labels and the closing clause for the paste-ready artifacts. The same
+   * insight has to arrive as a personal statement for a teenager and a board
+   * bio for a veteran; only the framing differs.
+   */
+  artifacts: {
+    headline: string;
+    spoken: string;
+    written: string;
+    close: string;
+  };
 };
 
 export const STAGES: Record<StageKey, Stage> = {
@@ -34,6 +45,12 @@ export const STAGES: Record<StageKey, Stage> = {
       "Write down three times you did this — an actual moment, with a date. Vague strengths are worthless; three concrete stories are unarguable.",
       "Find one adult who does this for a living and ask them a single question. Not for advice — for the shape of the job.",
     ],
+    artifacts: {
+      headline: "For a profile, form or bio",
+      spoken: "When someone asks what you’re good at",
+      written: "Opening lines for a personal statement",
+      close: "That's the thing I'd want a course or a first job to actually use.",
+    },
   },
   early: {
     key: "early",
@@ -46,6 +63,12 @@ export const STAGES: Record<StageKey, Stage> = {
       "Rewrite the first line of your profile so it says this instead of your job title. Titles are interchangeable; this isn't.",
       "Say yes this month to one piece of work that needs exactly this — even if it's unglamorous. Reputation compounds off repetition, not variety.",
     ],
+    artifacts: {
+      headline: "LinkedIn headline",
+      spoken: "“Tell me about yourself”",
+      written: "Opening lines for a profile or cover letter",
+      close: "That's what I want a role to actually use.",
+    },
   },
   mid: {
     key: "mid",
@@ -58,6 +81,12 @@ export const STAGES: Record<StageKey, Stage> = {
       "Name one recurring thing on your plate that someone else could do at 80%. Give it away this month. 80% from them beats 100% from you at the cost of this.",
       "Look at your last six months. If less than a third of it used this, that's not a busy patch — that's a drift, and it needs a deliberate correction.",
     ],
+    artifacts: {
+      headline: "How you introduce yourself",
+      spoken: "When someone asks what you do",
+      written: "For a promotion case or a review",
+      close: "That's the work my best hours should be going to.",
+    },
   },
   senior: {
     key: "senior",
@@ -70,6 +99,12 @@ export const STAGES: Record<StageKey, Stage> = {
       "Pick one person who would be measurably better at their job if they could do this. Give them one hour a month and nothing else. That's how it survives you.",
       "Choose where this is worth most now — advising, governance, teaching, building one last thing — and decline something good to protect it.",
     ],
+    artifacts: {
+      headline: "Bio line",
+      spoken: "When someone asks what you do now",
+      written: "For an advisory, board or speaker bio",
+      close: "That's what I'm most useful for now.",
+    },
   },
 };
 

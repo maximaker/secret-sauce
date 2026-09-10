@@ -83,6 +83,28 @@ an archetype floor of 3.2% and a signal spread of 1.36×.
 Thresholds are calibrated against that simulation rather than guessed — the
 confidence cut sits at 0.35 because the median run separates by 0.37.
 
+## The rarity figure
+
+The result opens with "about 1 in N". That number is sampled at build time by
+`scripts/build-rarity.ts` and baked into `lib/rarity.ts` as a lookup table:
+
+```bash
+npm run build:rarity   # re-run after changing questions or archetypes
+```
+
+It reports how often a given archetype + top-two-signals combination comes out
+of the instrument when the questions are answered at random — a property of the
+profile space these questions can produce, **not** an observed frequency among
+real people, which we could only know by collecting answers we deliberately
+don't collect. The copy on the page says so explicitly, because presenting a
+simulation as population data would be exactly the dishonesty the shadow
+sections exist to prevent.
+
+Cells with fewer than 30 samples report a bound ("rarer than 1 in 10,000")
+rather than a figure, since a cell seen once in 300,000 runs would otherwise
+claim a precision it doesn't have. If a lookup misses entirely — which means
+the table is stale — the section hides rather than guessing.
+
 ## Privacy
 
 Scoring runs entirely in the browser. Nothing is sent to a server, there is no

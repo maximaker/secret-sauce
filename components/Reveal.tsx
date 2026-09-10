@@ -109,6 +109,33 @@ export function Reveal({
 
       <p className="sauce">{sauceSentence}</p>
 
+      {/* The product claims "unique and valuable" and only ever argued the
+          second half. This argues the first — and has to keep saying what the
+          number actually is, since dressing a simulation up as population
+          data would be exactly the dishonesty the shadow sections exist to
+          avoid. */}
+      {result.rarity ? (
+        <section className="rarity">
+          <div className="rarity-figure">
+            <span className="rarity-pre">{result.rarity.atLeast ? "rarer than" : "about"}</span>
+            <span className="rarity-number">1 in {result.rarity.oneIn.toLocaleString("en-GB")}</span>
+          </div>
+          <p className="rarity-note">
+            These questions can produce {result.rarity.combinations} different shapes —
+            an archetype paired with your two strongest signals. Yours turns up in
+            {result.rarity.atLeast ? " fewer than " : " about "}
+            {result.rarity.percent < 0.1
+              ? result.rarity.percent.toFixed(2)
+              : result.rarity.percent.toFixed(1)}
+            % of runs.{" "}
+            <em>
+              That&rsquo;s measured from the questions themselves, not from other
+              people&rsquo;s answers — we don&rsquo;t collect those.
+            </em>
+          </p>
+        </section>
+      ) : null}
+
       <section className="section">
         <h2 className="section-label">What that actually means</h2>
         <p className="prose">{archetype.essence}</p>

@@ -701,7 +701,7 @@ export const QUESTIONS: Question[] = [
         id: "d1b",
         label: "Being watched while you work",
         vector: { people: -1 },
-        phrase: "working with someone looking over your shoulder",
+        phrase: "being watched while I work",
       },
       {
         id: "d1c",
@@ -737,7 +737,7 @@ export const QUESTIONS: Question[] = [
         id: "d1h",
         label: "Conflict you didn't choose",
         vector: { care: -1 },
-        phrase: "friction you had no part in starting",
+        phrase: "friction I had no part in starting",
       },
     ],
   },

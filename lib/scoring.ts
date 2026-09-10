@@ -18,6 +18,7 @@ import {
   type FullVector,
   type SignalKey,
 } from "./signals";
+import { RARITY, RARITY_COMBINATIONS, RARITY_SAMPLES } from "./rarity";
 import { STAGES, type StageKey } from "./stages";
 
 export type Answers = {
@@ -107,6 +108,19 @@ export type Alignment = {
   body: string;
 };
 
+/**
+ * How often this profile shape comes out of the instrument.
+ *
+ * `atLeast` marks an estimate resting on too few samples to state precisely,
+ * in which case `oneIn` is a floor rather than a measurement.
+ */
+export type Rarity = {
+  oneIn: number;
+  percent: number;
+  atLeast: boolean;
+  combinations: number;
+};
+
 /** A block of text written to be copied straight out and used somewhere. */
 export type Artifact = {
   id: string;
@@ -132,6 +146,7 @@ export type Result = {
   drains: string[] | null;
   misuse: string | null;
   artifacts: Artifact[];
+  rarity: Rarity | null;
 };
 
 function rankArchetypes(user: FullVector): { archetype: Archetype; score: number }[] {
@@ -379,6 +394,28 @@ function buildArtifacts(
   return out;
 }
 
+/**
+ * Below this many samples the frequency estimate is noise — a cell seen once
+ * in 300,000 runs would otherwise be reported as "1 in 300,000" off a single
+ * observation. Under the floor we report a bound instead of a figure.
+ */
+const RARITY_MIN_SAMPLES = 30;
+
+function lookupRarity(archetypeId: string, top: SignalKey[]): Rarity | null {
+  const count = RARITY[`${archetypeId}|${top.slice(0, 2).join("+")}`];
+  // A missing key means the table predates a change to the bank. Say nothing
+  // rather than something wrong — re-run `npm run build:rarity`.
+  if (!count) return null;
+  const reliable = count >= RARITY_MIN_SAMPLES;
+  const effective = reliable ? count : RARITY_MIN_SAMPLES;
+  return {
+    oneIn: Math.round(RARITY_SAMPLES / effective),
+    percent: (effective / RARITY_SAMPLES) * 100,
+    atLeast: !reliable,
+    combinations: RARITY_COMBINATIONS,
+  };
+}
+
 export function buildResult(answers: Answers): Result {
   const stage = answers.stage ?? "early";
   const depth: "core" | "deep" = hasDeep(answers) ? "deep" : "core";
@@ -430,6 +467,7 @@ export function buildResult(answers: Answers): Result {
     drains,
     misuse,
     artifacts: buildArtifacts(answers, best.archetype, stage, conditions, drains),
+    rarity: lookupRarity(best.archetype.id, readings.map((r) => r.key)),
   };
 }
 

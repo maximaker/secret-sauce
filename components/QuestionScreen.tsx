@@ -60,9 +60,21 @@ export function QuestionScreen({
 }) {
   const act = ACTS[question.act];
   const inputRef = useRef<HTMLInputElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
+  /**
+   * Move focus when the question changes.
+   *
+   * Single-select questions advance on their own, so the screen silently
+   * becomes a different question — a sighted user sees that, a screen reader
+   * user is told nothing, and the element they had focused has just been
+   * unmounted. Focusing the new heading is the standard fix and, unlike a live
+   * region, it doesn't read the question twice. Programmatic focus doesn't
+   * trigger :focus-visible, so there is no visible ring for mouse users.
+   */
   useEffect(() => {
     if (question.kind === "text") inputRef.current?.focus();
+    else headingRef.current?.focus();
   }, [question.kind, question.id]);
 
   const isMulti = question.kind === "multi";
@@ -78,7 +90,12 @@ export function QuestionScreen({
 
       {showActIntro ? <p className="act-intro">{act.intro}</p> : null}
 
-      <h2 className="display question-title" id={`q-${question.id}`}>
+      <h2
+        className="display question-title"
+        id={`q-${question.id}`}
+        ref={headingRef}
+        tabIndex={-1}
+      >
         {question.prompt}
       </h2>
 

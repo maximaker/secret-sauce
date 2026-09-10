@@ -982,3 +982,13 @@ button {
   align-items: center;
   gap: 1rem;
 }
+
+.pref-toggle {
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+.pref-toggle[aria-pressed="false"] {
+  border-color: var(--line-strong);
+  color: var(--text-muted);
+}

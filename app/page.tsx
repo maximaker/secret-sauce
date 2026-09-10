@@ -23,6 +23,7 @@ type Phase = "landing" | "stage" | "question" | "reveal";
 type Round = "core" | "deep";
 
 const STORE_KEY = "secret-sauce/v2";
+const PREFS_KEY = "secret-sauce/prefs";
 const HUE_LANDING = 258;
 const HUE_REVEAL = 78;
 const ADVANCE_MS = 340;
@@ -44,9 +45,18 @@ export default function Page() {
   const [answers, setAnswers] = useState<Answers>(emptyAnswers);
   const [hydrated, setHydrated] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
+  /**
+   * Timed navigation suits most people and halves the taps, but it is hostile
+   * to anyone who needs longer than a third of a second to register that they
+   * answered — screen reader and switch users especially. It stays the default
+   * and stays switchable.
+   */
+  const [autoAdvance, setAutoAdvance] = useState(true);
   const advanceTimer = useRef<number | null>(null);
   /** The question visible right now, read by the auto-advance timer. */
   const currentQid = useRef<string | undefined>(undefined);
+  const autoAdvanceRef = useRef(true);
+  autoAdvanceRef.current = autoAdvance;
 
   const deck: Question[] = round === "core" ? CORE_QUESTIONS : DEEP_QUESTIONS;
   const question = deck[index];
@@ -67,6 +77,12 @@ export default function Page() {
         setHydrated(true);
         return;
       }
+    }
+
+    try {
+      if (window.localStorage.getItem(PREFS_KEY) === "manual") setAutoAdvance(false);
+    } catch {
+      /* storage unavailable — the default stands */
     }
 
     try {
@@ -127,6 +143,7 @@ export default function Page() {
   const armAdvance = useCallback(
     (forQuestionId: string) => {
       clearTimer();
+      if (!autoAdvanceRef.current) return;
       advanceTimer.current = window.setTimeout(() => {
         if (currentQid.current !== forQuestionId) return;
         goNextRef.current();
@@ -176,6 +193,7 @@ export default function Page() {
     (stage: StageKey) => {
       setAnswers((prev) => ({ ...prev, stage }));
       clearTimer();
+      if (!autoAdvanceRef.current) return;
       advanceTimer.current = window.setTimeout(beginCore, ADVANCE_MS);
     },
     [beginCore],
@@ -310,6 +328,19 @@ export default function Page() {
     }
   }, [answers, phase, result]);
 
+  const flipAutoAdvance = () => {
+    clearTimer();
+    setAutoAdvance((on) => {
+      const next = !on;
+      try {
+        window.localStorage.setItem(PREFS_KEY, next ? "auto" : "manual");
+      } catch {
+        /* preference just won't persist */
+      }
+      return next;
+    });
+  };
+
   const restart = () => {
     clearTimer();
     try {
@@ -398,9 +429,19 @@ export default function Page() {
 
         {inJourney ? (
           <div className="footbar">
-            <button className="btn btn--quiet" onClick={goBack}>
-              ← Back
-            </button>
+            <div className="footbar-actions">
+              <button className="btn btn--quiet" onClick={goBack}>
+                ← Back
+              </button>
+              <button
+                className="btn btn--quiet pref-toggle"
+                onClick={flipAutoAdvance}
+                aria-pressed={autoAdvance}
+                title="When on, choosing an answer moves you to the next question automatically."
+              >
+                Auto-advance {autoAdvance ? "on" : "off"}
+              </button>
+            </div>
 
             {phase === "question" && question ? (
               <div className="footbar-actions">
@@ -426,9 +467,20 @@ export default function Page() {
                 </button>
               </div>
             ) : (
-              <span className="keyhint">
-                <kbd>1</kbd>–<kbd>4</kbd> to choose
-              </span>
+              <div className="footbar-actions">
+                <span className="keyhint">
+                  <kbd>1</kbd>–<kbd>4</kbd> to choose
+                </span>
+                {!autoAdvance ? (
+                  <button
+                    className="btn btn--accent"
+                    disabled={!canContinue}
+                    onClick={beginCore}
+                  >
+                    Continue
+                  </button>
+                ) : null}
+              </div>
             )}
           </div>
         ) : null}

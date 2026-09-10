@@ -161,8 +161,10 @@ a { color: var(--accent); text-underline-offset: 2px; }
   background: transparent;
 }
 .progress span {
-  display: block; height: 100%; width: 0%;
-  background: var(--accent); transition: width 120ms linear;
+  display: block; height: 100%; width: 100%;
+  background: var(--accent);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 120ms linear;
 }
 
 .shell { display: grid; grid-template-columns: 1fr; max-width: 1220px; margin: 0 auto; }
@@ -251,10 +253,12 @@ main { padding: 0 1.4rem 6rem; min-width: 0; }
 .chunk ul, .chunk ol { margin: 0 0 1.3rem; padding-left: 1.3rem; display: grid; gap: 0.5rem; }
 .chunk li { padding-left: 0.2rem; }
 .chunk blockquote {
-  margin: 1.6rem 0; padding: 1rem 1.3rem;
-  border-left: 3px solid var(--accent); background: var(--accent-soft);
-  border-radius: 0 6px 6px 0; color: var(--ink);
+  margin: 1.9rem 0; padding: 0 0 0 1.6rem;
+  border-left: 1px solid var(--rule);
+  font-family: var(--display); font-size: 1.02rem; line-height: 1.55;
+  color: var(--muted);
 }
+.chunk blockquote strong { color: var(--ink); }
 .chunk blockquote p:last-child { margin-bottom: 0; }
 .chunk code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -323,7 +327,7 @@ ${sections.join("\n")}
   var bar = document.getElementById('bar');
   function onScroll() {
     var h = document.documentElement.scrollHeight - window.innerHeight;
-    bar.style.width = (h > 0 ? (window.scrollY / h) * 100 : 0) + '%';
+    bar.style.transform = 'scaleX(' + (h > 0 ? window.scrollY / h : 0) + ')';
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();

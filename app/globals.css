@@ -992,3 +992,12 @@ button {
   border-color: var(--line-strong);
   color: var(--text-muted);
 }
+
+.argue { display: grid; gap: 1.1rem; }
+
+.alt-name {
+  font-size: clamp(1.5rem, 3.6vw, 2.1rem);
+  margin-bottom: 0.3rem;
+}
+
+.argue .panel { display: grid; gap: 0.7rem; justify-items: start; }

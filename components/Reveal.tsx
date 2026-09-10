@@ -78,15 +78,18 @@ export function Reveal({
   shareUrl,
   onRestart,
   onDeepen,
+  onRedoEvidence,
   deepCount,
 }: {
   result: Result;
   shareUrl: string;
   onRestart: () => void;
   onDeepen: (() => void) | null;
+  onRedoEvidence: () => void;
   deepCount: number;
 }) {
   const { copied, copy } = useCopy();
+  const [arguing, setArguing] = useState(false);
   const { archetype, runnerUp, readings, sauceSentence, moves, alignment, confidence } = result;
   const stage = STAGES[result.stage];
   const top = readings.slice(0, 4);
@@ -237,6 +240,63 @@ export function Reveal({
             {confidence.note}
           </p>
         </div>
+      </section>
+
+      {/* Nothing on the page let anyone disagree with it, and an assessment
+          you can't argue with is a horoscope. The honest response to "this
+          isn't me" is to fix the input, not to swap the output — so the
+          alternative shape is shown for comparison, and the real offer is to
+          re-answer the channel most likely to be wrong. */}
+      <section className="section">
+        <h2 className="section-label">Not convinced?</h2>
+        {!arguing ? (
+          <div>
+            <button className="btn btn--ghost" onClick={() => setArguing(true)}>
+              This doesn&rsquo;t sound like me
+            </button>
+          </div>
+        ) : (
+          <div className="argue">
+            <p className="prose">
+              Fair enough — it&rsquo;s built from sixteen taps, and it can be wrong. Two
+              things are worth trying before you throw it out.
+            </p>
+
+            <div className="panel">
+              <span className="section-label" style={{ marginBottom: "0.6rem" }}>
+                The shape you were nearly
+              </span>
+              <h3 className="display alt-name">{runnerUp.name}</h3>
+              <p className="archetype-tagline" style={{ marginBottom: "0.8rem" }}>
+                {runnerUp.tagline}
+              </p>
+              <p className="prose">{runnerUp.essence}</p>
+              <p className="prose">
+                <strong>The cost of it:</strong> {runnerUp.shadow}
+              </p>
+              <p className="runner-up" style={{ marginTop: "0.9rem" }}>
+                If that one lands and the first didn&rsquo;t, you&rsquo;re probably a blend —
+                you were {Math.round(result.separation * 100)}% of the way to being
+                separated cleanly.
+              </p>
+            </div>
+
+            <div className="panel">
+              <span className="section-label" style={{ marginBottom: "0.6rem" }}>
+                Or fix the input
+              </span>
+              <p className="prose">
+                The Evidence answers carry the most weight here, and they&rsquo;re the
+                ones people get wrong — usually by reporting what a badly-fitting job
+                demanded rather than what they actually get sought out for. Re-answer
+                just those four and everything rescores.
+              </p>
+              <button className="btn btn--accent" onClick={onRedoEvidence}>
+                Redo the evidence questions
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       {onDeepen ? (

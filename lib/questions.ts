@@ -824,5 +824,15 @@ export const ACT_WEIGHT: Record<ActId, number> = {
 export const CORE_QUESTIONS = QUESTIONS.filter((q) => ACTS[q.act].round === "core");
 export const DEEP_QUESTIONS = QUESTIONS.filter((q) => ACTS[q.act].round === "deep");
 
+/**
+ * The Evidence act on its own.
+ *
+ * When someone says the result doesn't fit, this is the channel most likely to
+ * be at fault — it carries the heaviest weight (§8.1) and it's the one people
+ * answer wrongly when they've spent a stretch in an ill-fitting role, reporting
+ * what that role demanded rather than what they're actually sought out for.
+ */
+export const EVIDENCE_QUESTIONS = QUESTIONS.filter((q) => q.act === "evidence");
+
 export const CORE_ACTS: ActId[] = ["energy", "ease", "evidence", "edge"];
 export const DEEP_ACTS: ActId[] = ["conditions", "drains", "crosscheck"];

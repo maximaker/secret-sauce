@@ -12,6 +12,7 @@ import {
   CORE_QUESTIONS,
   DEEP_ACTS,
   DEEP_QUESTIONS,
+  EVIDENCE_QUESTIONS,
   type ActId,
   type Question,
 } from "@/lib/questions";
@@ -20,7 +21,7 @@ import { decodeAnswers, encodeAnswers } from "@/lib/share";
 import { STAGES, type StageKey } from "@/lib/stages";
 
 type Phase = "landing" | "stage" | "question" | "reveal";
-type Round = "core" | "deep";
+type Round = "core" | "deep" | "redo";
 
 const STORE_KEY = "secret-sauce/v2";
 const PREFS_KEY = "secret-sauce/prefs";
@@ -58,7 +59,8 @@ export default function Page() {
   const autoAdvanceRef = useRef(true);
   autoAdvanceRef.current = autoAdvance;
 
-  const deck: Question[] = round === "core" ? CORE_QUESTIONS : DEEP_QUESTIONS;
+  const deck: Question[] =
+    round === "core" ? CORE_QUESTIONS : round === "deep" ? DEEP_QUESTIONS : EVIDENCE_QUESTIONS;
   const question = deck[index];
   currentQid.current = question?.id;
   const selected = useMemo(
@@ -91,7 +93,7 @@ export default function Page() {
         const parsed = JSON.parse(stored) as { answers: Answers; index: number; round?: Round };
         if (parsed?.answers?.stage) {
           const restoredRound: Round = parsed.round === "deep" ? "deep" : "core";
-          const size = (restoredRound === "core" ? CORE_QUESTIONS : DEEP_QUESTIONS).length;
+          const size = (restoredRound === "deep" ? DEEP_QUESTIONS : CORE_QUESTIONS).length;
           setAnswers({ ...emptyAnswers(), ...parsed.answers });
           setRound(restoredRound);
           setIndex(Math.min(Math.max(parsed.index ?? 0, 0), size - 1));
@@ -176,7 +178,7 @@ export default function Page() {
     }
     if (phase === "question") {
       if (index > 0) setIndex((n) => n - 1);
-      else if (round === "deep") setPhase("reveal");
+      else if (round === "deep" || round === "redo") setPhase("reveal");
       else setPhase("stage");
       return;
     }
@@ -225,6 +227,14 @@ export default function Page() {
     },
     [armAdvance, question],
   );
+
+  /** Re-answer just the Evidence act, keeping the previous picks visible. */
+  const redoEvidence = useCallback(() => {
+    clearTimer();
+    setRound("redo");
+    setIndex(0);
+    setPhase("question");
+  }, []);
 
   const startDeep = useCallback(() => {
     clearTimer();
@@ -370,15 +380,20 @@ export default function Page() {
         </span>
         {answers.stage && phase !== "landing" ? (
           <span className="stage-tag">
-            {round === "deep" && phase === "question"
+            {phase === "question" && round === "deep"
               ? "Going deeper"
-              : STAGES[answers.stage].currency}
+              : phase === "question" && round === "redo"
+                ? "Rechecking"
+                : STAGES[answers.stage].currency}
           </span>
         ) : null}
       </div>
 
       {inJourney ? (
-        <Progress acts={round === "core" ? CORE_ACTS : DEEP_ACTS} answeredByAct={answeredByAct} />
+        <Progress
+          acts={round === "core" ? CORE_ACTS : round === "deep" ? DEEP_ACTS : ["evidence"]}
+          answeredByAct={answeredByAct}
+        />
       ) : null}
 
       <div className="main">
@@ -408,6 +423,7 @@ export default function Page() {
             shareUrl={shareUrl}
             onRestart={restart}
             onDeepen={hasDeep(answers) ? null : startDeep}
+            onRedoEvidence={redoEvidence}
             deepCount={DEEP_QUESTIONS.length}
           />
         ) : null}
@@ -462,7 +478,9 @@ export default function Page() {
                     : lastOfDeck
                       ? round === "deep"
                         ? "See the full picture"
-                        : "See your sauce"
+                        : round === "redo"
+                          ? "Score it again"
+                          : "See your sauce"
                       : "Continue"}
                 </button>
               </div>
